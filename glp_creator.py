@@ -3,6 +3,7 @@
 import sys
 import math
 import subprocess
+import os
 
 MODEL_FILENAME = "morpher.mod"
 DATA_FILENAME = "morpher.data"
@@ -16,22 +17,26 @@ TARGET_PARAM_STRING = "param target :="
 
 EPILOGUE = "end;\n"
 
+"""
+Represents a GLPK data file.
+"""
 class DataFile:
     def __init__(self, filename, source, target):
         self.filename = filename
-#        self.source = ["10", "20", "30", "40", "50", "60", "70", "80", "90"]
-#        self.target = ["90", "80", "70", "60", "50", "40", "30", "20", "10"]
 
-        if (len(self.source) != len(self.target)):
+        if (len(source) != len(target)):
             print "Packet length distributions have different size."
             sys.exit(1)
 
+        self.source = source
+        self.target = source
         self.size = len(self.source)
 
         if (self.size <= 0):
             print "0 size distribution"
             sys.exit(1)
 
+    """Write data file to disk."""
     def create_data_file(self):
         f = open(self.filename, 'w')
         f.write(PROLOGUE)
@@ -81,7 +86,10 @@ INTERESTING_FILE_SECTION = \
 """
 #    8 morph[0,7]   B          0.625
 
-def parse_solution_file(filename):
+"""
+Parse the solution file of glpsol and print the morphing matrix.
+"""
+def parse_and_print_solution_file(filename):
     morphing_matrix = []
 
     f = open(SOLUTION_FILENAME)
@@ -115,14 +123,53 @@ def parse_solution_file(filename):
         else:
             print morphing_matrix[i],
 
-if __name__ == "__main__":
-    print "Started"
-    df = DataFile(DATA_FILENAME, True, True)
+"""Given a filename wit hthe following format:
+
+<packet length : probability>
+1: 0.024...
+2: 0.005...
+3: 0.156...
+...
+
+return a list representing the probability distribution.
+"""
+def get_distr_from_file(filename):
+    i = 1
+    distr = []
+    with open(filename) as file:
+        for line in file:
+            subline = line.split(" ")
+            if ((len(subline) != 2) or (not subline[0].startswith(str(i)))):
+                print "Wrong file format (%d %s %s)" % (len(subline), subline[0], str(i))
+                sys.exit(1)
+            distr.append(subline[1])
+            i+=1
+    return distr
+
+def usage():
+    print """Faulty arguments.
+    Usage:
+    \tglp_creator <source_distr_file> <dest_distr_file>"""
+    sys.exit()
+
+def main():
+    if ((len(sys.argv) != 3) or
+        (not os.path.isfile(sys.argv[1])) or
+        (not os.path.isfile(sys.argv[2]))):
+        usage()
+
+    source_distr = get_distr_from_file(sys.argv[1])
+    dest_distr = get_distr_from_file(sys.argv[2])
+
+    df = DataFile(DATA_FILENAME, source_distr, dest_distr)
     df.create_data_file()
     subprocess.check_output([
         "glpsol", "--math", MODEL_FILENAME,
         "--data", DATA_FILENAME,
         "--output", SOLUTION_FILENAME
     ])
-    parse_solution_file(SOLUTION_FILENAME)
+    parse_and_print_solution_file(SOLUTION_FILENAME)
+
+if __name__ == "__main__":
+    main()
 
