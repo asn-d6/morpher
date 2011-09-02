@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 import sys
 import random
 import math
@@ -19,9 +17,9 @@ This library provides the following functions:
 
 Example of its usage:
 
-$ python2.7 glp_creator.py --source=source_distr.txt --target=target_distr.txt  > morphing_matrix
+$ python2.7 morpheus.py --source=source_distr.txt --target=target_distr.txt  > morphing_matrix
 $ ipython2.7
-In [1]: from packet import *
+In [1]: from dream import *
 
 In [2]: mm = MorphingMatrix("morphing_matrix")
 
@@ -62,7 +60,6 @@ class MorphingMatrix:
 
         n = len(self.matrix)
         size = math.sqrt(n)
-        print size
         if ((size <= 1) or (size != int(size))):
             raise ValueError("Not a square matrix.")
 

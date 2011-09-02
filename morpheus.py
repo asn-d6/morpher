@@ -1,4 +1,5 @@
-#!/bin/python
+#!/usr/bin/python2.7
+# subprocess.check_output requires python-2.7. sowwy.
 
 import sys
 import math
@@ -283,7 +284,7 @@ def get_distr_from_file(filename):
 """Spit usage instructions and exit"""
 def usage():
     print """Usage:
-    \tglp_creator options [arguments]
+    \tmorpheus options [arguments]
     where 'options' are:
        --source=<source distribution filename>
        --target=<target distribution filename>
@@ -304,7 +305,7 @@ def print_square_matrix(matrix_list):
             else:
                 print "%.6f" %(float(matrix_list[i-1])),
 
-"""Startup glp_creator with partitioning.
+"""Startup morpheus with partitioning.
 
 For more information see section
 "3.4 Dealing With Large Sample Spaces" of the Traffic Morphing paper.
@@ -344,7 +345,7 @@ def startup_with_partitioning(source_distr, target_distr):
         print "Interpartition matrix (%d->%d):" % (m[1],m[2])
         print_square_matrix(m[0])
 
-"""Startup vanilla glp_creator. Don't do partitioning and other fancy stuff."""
+"""Startup vanilla morpheus. Don't do partitioning and other fancy stuff."""
 def startup(source_distr, target_distr):
     """Morphing matrix."""
     m_m_glpk = MorphingMatrixLP(source_distr.distr,

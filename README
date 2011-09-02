@@ -7,11 +7,11 @@ problems.
 
 In the topdir you can find:
 
-* glp_creator.py: You pass it a source and a target probability
+* morpheus.py: You pass it a source and a target probability
     distribution of packet lengths and it spits a morphing matrix in its
     output (or multiple morphing matrices if you use partitioning.).
     You can then use those morphing matrices to your heart's content.
-* packet.py: A small library that understands what a morphing matrix
+* dream.py: A small library that understands what a morphing matrix
     is. You pass it a morphing matrix and then it can answer questions
     like: "What possible shapes can a packet of 420 bytes take for
     this morphing matrix?" or "Give me a target packet length for a
