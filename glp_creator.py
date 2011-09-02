@@ -160,7 +160,6 @@ class MorphingMatrixLP:
             substr = ' '.join(substr.split())
             morphing_matrix.append(substr.split(" ")[3])
 
-
         n = len(morphing_matrix)
         size = math.sqrt(n)
         assert(size == int(size)) # must not be a float
@@ -236,8 +235,16 @@ class Distribution:
         assert(start == MAX_PAYLOAD_SIZE)
         assert(len(self.partitions[-1]) == N_PARTITION_ELEMENTS)
 
+def string_is_float(string):
+    try:
+        float(string)
+    except ValueError, TypeError:
+        return False
+    return True
+
 """Given a file of the format '<packet length: probability>\n':
 
+# comment
 1: 0.024...
 2: 0.005...
 3: 0.156...
@@ -251,7 +258,11 @@ def get_distr_from_file(filename):
     with open(filename) as file:
         for line in file:
             subline = line.split(" ")
-            if ((len(subline) != 2) or (not subline[0].startswith(str(i)))):
+            if (subline[0].startswith("#")): # comment
+                continue
+            if ((len(subline) != 2) or
+                (not subline[0].startswith(str(i))) or
+                (not string_is_float(subline[1]))):
                 print "Wrong file format (%d %s %s)" % (len(subline), subline[0], str(i))
                 sys.exit(1)
             distr.append(subline[1].rstrip())
