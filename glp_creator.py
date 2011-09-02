@@ -6,6 +6,7 @@ import subprocess
 import os
 import decimal
 import itertools
+import getopt
 
 # 1500b ethernet MTU - 20b min. ip headers - 20b min. tcp headers
 MAX_PAYLOAD_SIZE = 1460
@@ -157,8 +158,18 @@ class MorphingMatrixLP:
             if (substr == ""):
                 break
 
-            substr = ' '.join(substr.split())
-            morphing_matrix.append(substr.split(" ")[3])
+            substr = ' '.join(substr.split()).split(" ")
+            strlen = len(substr)
+
+            if ((strlen == 6) or (strlen == 7)):
+                morphing_matrix.append(substr[3])
+            elif ((strlen == 3) or (strlen == 4)):
+                morphing_matrix.append(substr[1])
+            elif (strlen == 5):
+                if (substr[-1] == "eps"):
+                    morphing_matrix.append(substr[1])
+                else:
+                    morphing_matrix.append(substr[3])
 
         n = len(morphing_matrix)
         size = math.sqrt(n)
@@ -206,20 +217,20 @@ self.repr[1] = 0.1 + 0.2 = 0.3
 ...
 """
 class Distribution:
-    def __init__(self, distr_list):
+    def __init__(self, distr_list, do_partition):
         self.distr = distr_list
         if (len(self.distr) != MAX_PAYLOAD_SIZE):
             print "We only support distributions of size %d." % (MAX_PAYLOAD_SIZE)
             sys.exit(1)
 
-        self.partitions = [] # x_1 ... x_n
-        self.repr = [] # X'
-
-        self.__do_partition()
+        if (do_partition):
+            self.partitions = [] # x_1 ... x_n
+            self.repr = [] # X'
+            self.__partition()
 
     """Split the distribution into N_PARTITIONS partitions of
     N_PARTITION_ELEMENTS elements each. Also fill self.repr."""
-    def __do_partition(self):
+    def __partition(self):
         start = 0
         end = N_PARTITION_ELEMENTS
         for _ in xrange(N_PARTITIONS):
@@ -271,9 +282,14 @@ def get_distr_from_file(filename):
 
 """Spit usage instructions and exit"""
 def usage():
-    print """Wrong arguments.
-    Usage:
-    \tglp_creator <source_distr_file> <dest_distr_file>"""
+    print """Usage:
+    \tglp_creator options [arguments]
+    where 'options' are:
+       --source=<source distribution filename>
+       --target=<target distribution filename>
+    and 'arguments' are:
+       --partition : if you want to use partitioning as an optimization.
+    """
     sys.exit()
 
 """Given 'matrix_list', a list representing a square matrix, print it."""
@@ -288,15 +304,14 @@ def print_square_matrix(matrix_list):
             else:
                 print "%.6f" %(float(matrix_list[i-1])),
 
-def main():
-    if ((len(sys.argv) != 3) or
-        (not os.path.isfile(sys.argv[1])) or
-        (not os.path.isfile(sys.argv[2]))):
-        usage()
+"""Startup glp_creator with partitioning.
 
-    source_distr = Distribution(get_distr_from_file(sys.argv[1]))
-    target_distr = Distribution(get_distr_from_file(sys.argv[2]))
+For more information see section
+"3.4 Dealing With Large Sample Spaces" of the Traffic Morphing paper.
+"""
 
+def startup_with_partitioning(source_distr, target_distr):
+    assert(source_distr.repr and target_distr.repr)
     """Partition morphing matrix.
     It's the morphing matrix that links a source partition to a target
     partition."""
@@ -304,6 +319,7 @@ def main():
                                   target_distr.repr)
     p_m_m = p_m_m_glpk.harvest()
 
+    assert(source_distr.partitions and target_distr.partitions)
     """Interpartition matrices.
     N_PARTITIONS^2 morphing matrices. Each of them advices on how to
     morph packets from a source partition to a target partition.
@@ -328,6 +344,51 @@ def main():
         print "Interpartition matrix (%d->%d):" % (m[1],m[2])
         print_square_matrix(m[0])
 
+"""Startup vanilla glp_creator. Don't do partitioning and other fancy stuff."""
+def startup(source_distr, target_distr):
+    """Morphing matrix."""
+    m_m_glpk = MorphingMatrixLP(source_distr.distr,
+                                target_distr.distr)
+    m_m = m_m_glpk.harvest()
+
+    print "Morphing matrix:"
+    print_square_matrix(m_m)
+
+"""Entry point"""
+def main(argv):
+    try:
+        opts, args = getopt.getopt(argv, "s:t:p", ["source=", "target=", "partition"])
+    except getopt.GetoptError:
+        usage()
+        sys.exit(1)
+
+    source = None
+    target = None
+    do_partition = False
+
+    for opt, arg in opts:
+        if opt in ("-s", "--source"):
+            source = arg
+        elif opt in ("-t", "--target"):
+            target = arg
+        elif opt in ("-p", "--partition"):
+            do_partition = True
+
+    if ((not source) or (not target)):
+        print "Please provide a source and a target distribution.\n"
+        usage()
+    if ((not os.path.isfile(source)) or (not os.path.isfile(target))):
+        print "Please provide valid filenames for the distributions.\n"
+        usage()
+
+    source_distr = Distribution(get_distr_from_file(source), do_partition)
+    target_distr = Distribution(get_distr_from_file(target), do_partition)
+
+    if (do_partition):
+        startup_with_partitioning(source_distr, target_distr)
+    else:
+        startup(source_distr, target_distr)
+
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])
 
