@@ -1,0 +1,12 @@
+The packet length probability distributions in data/ were created
+after analysis of traffic traces provided by CAIDA [1].
+The traffic traces were captured by monitoring an Equinix datacenter
+in Chicago, IL [2].
+
+Specifically, the packet length probability distributions would not
+exist without the help of Zack Weinberg, Vinod Yegneswaran, Paul Hick
+and kc claffy.
+
+[1]: http://www.caida.org/home/
+[2]: http://www.caida.org/data/passive/passive_2011_dataset.xml
+     http://www.caida.org/data/monitors/passive-equinix-chicago.xml
