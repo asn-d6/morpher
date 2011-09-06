@@ -2,6 +2,7 @@ import sys
 import random
 import math
 from decimal import Decimal
+import scipy.io
 
 """
 This library provides the following functions:
@@ -17,13 +18,15 @@ This library provides the following functions:
 
 Example of its usage:
 
-$ python2.7 morpheus.py --source=source_distr.txt --target=target_distr.txt  > morphing_matrix
+$ python2.7 morpheus.py --source=source_distr.txt --target=target_distr.txt --output=mm
 $ ipython2.7
 In [1]: from dream import *
 
-In [2]: mm = MorphingMatrix("morphing_matrix")
+In [2]: mm_csc = get_csc_from_mm("mm.mtx")
 
-In [3]: mm.get_potential(85)
+In [3]: mm = MorphingMatrix(mm_csc)
+
+In [4]: mm.get_potential(85)
 A packet of length 85 bytes can become:
   981 bytes with probability 0.082025
   982 bytes with probability 0.199468
@@ -32,11 +35,11 @@ A packet of length 85 bytes can become:
   985 bytes with probability 0.149936
   986 bytes with probability 0.373120
 
-In [4]: mm.get_target_length(85, 0.3)
-Out[4]: 983
+In [5]: mm.get_target_length(85, 0.3)
+Out[5]: 983
 
-In [5]: mm.get_target_length(85)
-Out[5]: 985
+In [6]: mm.get_target_length(85)
+Out[6]: 985
 """
 
 PARANOIA = True
@@ -50,20 +53,22 @@ it's a 1460x1460 matrix).
 class MorphingMatrix:
     """Initialize MorphingMatrix.
 
-    'fname' points to a file containing the morphing matrix.
-
-    The file must contain the matrix as whitespace seperated values.
-    e.g. "0 0.12 0 0.1" is a brilliant 2x2 matrix.
+    'matrix' is a SciPy sparse matrix in CSC format.
     """
-    def __init__(self, fname):
-        self.matrix = self.__get_list_from_file(fname)
+    def __init__(self, matrix):
+        self.matrix = matrix
+        if (self.matrix.shape[0] != self.matrix.shape[1]):
+            raise ValueError("Matrix provided is not square (%d:%d)." %
+                             (self.matrix.shape[0], self.matrix.shape[1]))
+        self.size = self.matrix.shape[0]
 
-        n = len(self.matrix)
-        size = math.sqrt(n)
-        if ((size <= 1) or (size != int(size))):
-            raise ValueError("Not a square matrix.")
+        if (PARANOIA): self.__validate()
 
-        self.size = int(size)
+    """Make sure that our morphing matrix indeed looks like one."""
+    def __validate(self):
+        for i in xrange(1,self.size+1):
+            col = self.__get_matrix_column(i)
+            assert(Decimal(0.99999) < Decimal(math.fsum(col)) < Decimal(1.00001))
 
     """Public function.
     Given 's_len', the packet length of a source packet that we want
@@ -99,18 +104,6 @@ class MorphingMatrix:
             print "\t%d bytes with probability %s" % (pot[0], pot[1])
 
     """
-    Given 'fname', a string pointing to a file containing a morphing
-    matrix whose elements are separated by spaces, return that
-    morphing matrix as a list.
-    """
-    def __get_list_from_file(self, fname):
-        f = open(fname)
-        readed = f.read()
-        f.close()
-
-        return ' '.join(readed.split()).split(" ")
-
-    """
     Given a morphing matrix 'column' as a list, and a 'random'
     number \in [0.1] return the target packet length.
     """
@@ -125,10 +118,10 @@ class MorphingMatrix:
             rand = Decimal(rand)
 
         if (not (0 <= rand <= 1)):
-            return False
+            raise ValueError("Value of 'rand' is unacceptable! (%s)" % (rand))
 
         while ((rand > cdf) and (i < self.size)):
-            cdf += column[i] # string ?
+            cdf += column[i]
             i += 1
 
         return i
@@ -136,18 +129,17 @@ class MorphingMatrix:
     """Return column 'i' of the morphing matrix as a list."""
     def __get_matrix_column(self, i):
         if (not (0 < i <= self.size)):
-            return None
+            raise ValueError("You requested column '%d' " \
+                             "of matrix of size '%s'." %(i, self.size))
 
         col = []
-        j = i-1
-        mlen = len(self.matrix)
-        while (j < mlen):
-            col.append(self.matrix[j])
-            j += self.size
+        col_tmp = self.matrix.getcol(i-1).toarray().tolist()
+        for elem in col_tmp:
+            if (PARANOIA): assert(len(elem) == 1)
+            col.append(elem[0])
 
-        col_dec = map(Decimal, col)
+        return col
 
-        if (PARANOIA):
-            assert(Decimal("0.9999") < sum(col_dec) < Decimal("1.0001"))
-
-        return col_dec
+def get_csc_from_mm(fname):
+    mat = scipy.io.mmread(fname)
+    return mat.tocsc()

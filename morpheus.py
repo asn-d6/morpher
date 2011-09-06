@@ -5,9 +5,15 @@ import sys
 import math
 import subprocess
 import os
+import os.path
 import decimal
 import itertools
 import getopt
+from scipy.sparse import lil_matrix
+import scipy.io
+import numpy
+
+PARANOIA = True
 
 # 1500b ethernet MTU - 20b min. ip headers - 20b min. tcp headers
 MAX_PAYLOAD_SIZE = 1460
@@ -220,11 +226,13 @@ self.repr[1] = 0.1 + 0.2 = 0.3
 class Distribution:
     def __init__(self, distr_list, do_partition):
         self.distr = distr_list
-        if (len(self.distr) != MAX_PAYLOAD_SIZE):
-            print "We only support distributions of size %d." % (MAX_PAYLOAD_SIZE)
-            sys.exit(1)
 
         if (do_partition):
+            if (len(self.distr) != MAX_PAYLOAD_SIZE):
+                print "We only support partitioning on distributions " \
+                      "of size %d." % (MAX_PAYLOAD_SIZE)
+                sys.exit(1)
+
             self.partitions = [] # x_1 ... x_n
             self.repr = [] # X'
             self.__partition()
@@ -236,7 +244,7 @@ class Distribution:
         end = N_PARTITION_ELEMENTS
         for _ in xrange(N_PARTITIONS):
             tmp = map(decimal.Decimal, self.distr[start:end])
-            tmp_sum = sum(tmp)
+            tmp_sum = math.fsum(tmp)
 
             self.partitions.append(map(lambda x: x/tmp_sum, tmp))
             self.repr.append(tmp_sum)
@@ -279,6 +287,11 @@ def get_distr_from_file(filename):
                 sys.exit(1)
             distr.append(subline[1].rstrip())
             i+=1
+
+    if (PARANOIA):
+        tmp = map(decimal.Decimal, distr)
+        assert(math.fsum(tmp) == decimal.Decimal(1))
+
     return distr
 
 """Spit usage instructions and exit"""
@@ -288,30 +301,41 @@ def usage():
     where 'options' are:
        --source=<source distribution filename>
        --target=<target distribution filename>
+       --output=<morphing matrix output filename>
     and 'arguments' are:
        --partition : if you want to use partitioning as an optimization.
     """
     sys.exit()
 
-"""Given 'matrix_list', a list representing a square matrix, print it."""
-def print_square_matrix(matrix_list):
-        n = len(matrix_list)
-        size = math.sqrt(n)
-        assert(size == int(size)) # must not be a float
+"""
+Given a 'list' and a 'size', return a list of lists representing a
+square matrix.
+Example: get_sqmatrix_from_list([0,1,2,3],2) = [[0,1],[2,3]]
+"""
+def get_sqmatrix_from_list(list, size):
+    ret = []
+    start = 0
+    end = size
+    if (len(list) != pow(size,2)):
+        raise ValueError("You either gave a wrong 'size' " \
+                         "or this is not a square matrix. (%d:%d)" % (len(list), size))
 
-        for i in xrange(1,n+1):
-            if ((i % size) == 0):
-                print "%.6f" %(float(matrix_list[i-1]))
-            else:
-                print "%.6f" %(float(matrix_list[i-1])),
+    tmp_list = []
+    for _ in xrange(size):
+        ret.append(list[start:end])
+        start += size
+        end += size
+
+    assert(start == len(list))
+
+    return ret
 
 """Startup morpheus with partitioning.
 
 For more information see section
 "3.4 Dealing With Large Sample Spaces" of the Traffic Morphing paper.
 """
-
-def startup_with_partitioning(source_distr, target_distr):
+def startup_with_partitioning(source_distr, target_distr, output):
     assert(source_distr.repr and target_distr.repr)
     """Partition morphing matrix.
     It's the morphing matrix that links a source partition to a target
@@ -339,32 +363,39 @@ def startup_with_partitioning(source_distr, target_distr):
                                                target_distr.partitions[j])
         interpartition_matrices.append((interpartition_glpk.harvest(), i, j))
 
-    print "Partition morphing matrix:"
-    print_square_matrix(p_m_m)
-    for m in interpartition_matrices:
-        print "Interpartition matrix (%d->%d):" % (m[1],m[2])
-        print_square_matrix(m[0])
+    # save them to 'output'
 
 """Startup vanilla morpheus. Don't do partitioning and other fancy stuff."""
-def startup(source_distr, target_distr):
+def startup(source_distr, target_distr, output):
     """Morphing matrix."""
     m_m_glpk = MorphingMatrixLP(source_distr.distr,
                                 target_distr.distr)
     m_m = m_m_glpk.harvest()
 
-    print "Morphing matrix:"
-    print_square_matrix(m_m)
+    m_size = len(m_m)
+    assert(math.sqrt(m_size) == int(math.sqrt(m_size)))
+
+    """
+    XXX This cast to numpy.double introduces loss of significance.
+    Unfortunately, SciPy doesn't support sparse matrices
+    with Decimals or strings.
+    """
+    tmp_m_m = map(numpy.double, m_m)
+    sq = get_sqmatrix_from_list(tmp_m_m, int(math.sqrt(m_size)))
+    lm = lil_matrix(sq)
+    scipy.io.mmwrite(output, lm, comment="Morphing Matrix", field="real")
 
 """Entry point"""
 def main(argv):
     try:
-        opts, args = getopt.getopt(argv, "s:t:p", ["source=", "target=", "partition"])
+        opts, args = getopt.getopt(argv, "s:t:o:p", ["source=", "target=", "output=", "partition"])
     except getopt.GetoptError:
         usage()
         sys.exit(1)
 
     source = None
     target = None
+    output = None
     do_partition = False
 
     for opt, arg in opts:
@@ -372,24 +403,28 @@ def main(argv):
             source = arg
         elif opt in ("-t", "--target"):
             target = arg
+        elif opt in ("-o", "--output"):
+            output = arg
         elif opt in ("-p", "--partition"):
             do_partition = True
 
     if ((not source) or (not target)):
-        print "Please provide a source and a target distribution.\n"
+        print "Please provide a source and a target distribution."
         usage()
     if ((not os.path.isfile(source)) or (not os.path.isfile(target))):
-        print "Please provide valid filenames for the distributions.\n"
+        print "Please provide valid filenames for the distributions."
+        usage()
+    if ((not output) or (os.path.exists(output))):
+        print "Please provide a valid output filename."
         usage()
 
     source_distr = Distribution(get_distr_from_file(source), do_partition)
     target_distr = Distribution(get_distr_from_file(target), do_partition)
 
     if (do_partition):
-        startup_with_partitioning(source_distr, target_distr)
+        startup_with_partitioning(source_distr, target_distr, output)
     else:
-        startup(source_distr, target_distr)
+        startup(source_distr, target_distr, output)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
-

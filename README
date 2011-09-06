@@ -8,8 +8,8 @@ problems.
 In the topdir you can find:
 
 * morpheus.py: You pass it a source and a target probability
-    distribution of packet lengths and it spits a morphing matrix in its
-    output (or multiple morphing matrices if you use partitioning.).
+    distribution of packet lengths and it writes a morphing matrix in
+    sparse matrix COO format to a given output file.
     You can then use those morphing matrices to your heart's content.
 * dream.py: A small library that understands what a morphing matrix
     is. You pass it a morphing matrix and then it can answer questions
