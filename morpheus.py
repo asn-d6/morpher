@@ -1,11 +1,7 @@
-#!/usr/bin/python2.7
-# subprocess.check_output requires python-2.7. sowwy.
-
 import sys
 import math
 import subprocess
 import os
-import os.path
 import decimal
 import itertools
 import getopt
@@ -16,12 +12,12 @@ import numpy
 PARANOIA = True
 
 # 1500b ethernet MTU - 20b min. ip headers - 20b min. tcp headers
-MAX_PAYLOAD_SIZE = 1460
+MAX_TCP_PAYLOAD_SIZE = 1460
 
 # 20 * 73 = 1460. Sounds like a nice balance.
 N_PARTITIONS = 20
 N_PARTITION_ELEMENTS = 73
-assert(N_PARTITIONS * N_PARTITION_ELEMENTS == MAX_PAYLOAD_SIZE)
+assert(N_PARTITIONS * N_PARTITION_ELEMENTS == MAX_TCP_PAYLOAD_SIZE)
 
 GLPK_FILENAME = "morpher.mod"
 SOLUTION_FILENAME = "morpher.sol"
@@ -228,9 +224,9 @@ class Distribution:
         self.distr = distr_list
 
         if (do_partition):
-            if (len(self.distr) != MAX_PAYLOAD_SIZE):
+            if (len(self.distr) != MAX_TCP_PAYLOAD_SIZE):
                 print "We only support partitioning on distributions " \
-                      "of size %d." % (MAX_PAYLOAD_SIZE)
+                      "of size %d." % (MAX_TCP_PAYLOAD_SIZE)
                 sys.exit(1)
 
             self.partitions = [] # x_1 ... x_n
@@ -252,7 +248,7 @@ class Distribution:
             start += N_PARTITION_ELEMENTS
             end += N_PARTITION_ELEMENTS
 
-        assert(start == MAX_PAYLOAD_SIZE)
+        assert(start == MAX_TCP_PAYLOAD_SIZE)
         assert(len(self.partitions[-1]) == N_PARTITION_ELEMENTS)
 
 def string_is_float(string):
@@ -427,4 +423,8 @@ def main(argv):
         startup(source_distr, target_distr, output)
 
 if __name__ == "__main__":
+    if (sys.hexversion < 0x02070000):
+        print "You can only run this script with a Python version >= 2.7."
+        sys.exit(1)
+
     main(sys.argv[1:])

@@ -1,0 +1,7 @@
+* Review the GLPK part. It finishes *too* fast for a 1460x1460
+  morphing matrix. The resulting matrix seems fine™ though.
+
+* Fix the representation errors that occur when casting a Decimal to
+  a float.
+
+* Make perseus.py and dream.py work with Python < 2.7 as well.

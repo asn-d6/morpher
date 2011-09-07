@@ -18,7 +18,7 @@ This library provides the following functions:
 
 Example of its usage:
 
-$ python2.7 morpheus.py --source=source_distr.txt --target=target_distr.txt --output=mm
+$ python2.7 morpheus.py --source=data/source_distr.txt --target=data/target_distr.txt --output=mm
 $ ipython2.7
 In [1]: from dream import *
 
@@ -143,3 +143,8 @@ class MorphingMatrix:
 def get_csc_from_mm(fname):
     mat = scipy.io.mmread(fname)
     return mat.tocsc()
+
+if __name__ != "__main__":
+    if (sys.hexversion < 0x02070000):
+        raise RuntimeError("This library is only useful with " \
+                           "a Python version >= 2.7.")
