@@ -16,14 +16,10 @@ PARANOIA = True
 # 1500b ethernet MTU - 20b min. ip headers - 20b min. tcp headers
 MAX_TCP_PAYLOAD_SIZE = 1460
 
-# 20 * 73 = 1460. Sounds like a nice balance.
-N_PARTITIONS = 20
-N_PARTITION_ELEMENTS = 73
-assert(N_PARTITIONS * N_PARTITION_ELEMENTS == MAX_TCP_PAYLOAD_SIZE)
-
 GLPK_FILENAME = "morpher.mod"
 SOLUTION_FILENAME = "morpher.sol"
 
+# Strings necessary for the GLPK file format.
 PROLOGUE = "data;\n\n"
 SET_STRING = "set PACKET_SIZE"
 SOURCE_PARAM_STRING = "param source :="
@@ -47,16 +43,6 @@ subject to column_prob {j in PACKET_SIZE}: sum{i in PACKET_SIZE} (morph[i,j]) = 
 subject to morphing_creation {i in PACKET_SIZE} : sum{j in PACKET_SIZE} (morph[i,j]*source[j]) = target[i];
 
 """
-
-# this is the section in the default glpsol output which contains the morphing matrix
-INTERESTING_FILE_SECTION = \
-"""
-   No. Column name  St   Activity     Lower bound   Upper bound    Marginal
------- ------------ -- ------------- ------------- ------------- -------------
-"""
-#    8 morph[0,7]   B          0.625
-
-
 
 """
 Represents a Linear Programming problem of trying to find the Morphing
@@ -147,6 +133,12 @@ class MorphingMatrixLP:
 
     """Parse the solution file of glpsol and return the morphing matrix."""
     def __parse_solution_file(self):
+        INTERESTING_FILE_SECTION = \
+"""
+   No. Column name  St   Activity     Lower bound   Upper bound    Marginal
+------ ------------ -- ------------- ------------- ------------- -------------
+"""
+
         morphing_matrix = []
 
         f = open(SOLUTION_FILENAME)
@@ -221,6 +213,10 @@ self.repr[0] = 0.2 + 0.2 = 0.4
 self.repr[1] = 0.1 + 0.2 = 0.3
 ...
 """
+# 20 * 73 = 1460. Sounds like a nice balance.
+N_PARTITIONS = 20
+N_PARTITION_ELEMENTS = 73
+assert(N_PARTITIONS * N_PARTITION_ELEMENTS == MAX_TCP_PAYLOAD_SIZE)
 class Distribution:
     def __init__(self, distr_list, do_partition):
         self.distr = distr_list

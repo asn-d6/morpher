@@ -64,12 +64,6 @@ class MorphingMatrix:
 
         if (PARANOIA): self.__validate()
 
-    """Make sure that our morphing matrix indeed looks like one."""
-    def __validate(self):
-        for i in xrange(1,self.size+1):
-            col = self.__get_matrix_column(i)
-            assert(Decimal(0.99999) < Decimal(math.fsum(col)) < Decimal(1.00001))
-
     """Public function.
     Given 's_len', the packet length of a source packet that we want
     to morph, return the target packet length according to the
@@ -103,9 +97,17 @@ class MorphingMatrix:
         for pot in potential:
             print "\t%d bytes with probability %s" % (pot[0], pot[1])
 
+    """Make sure that our morphing matrix indeed looks like one."""
+    def __validate(self):
+        # all columns should describe valid probability mass functions.
+        for i in xrange(1,self.size+1):
+            col = self.__get_matrix_column(i)
+            assert(Decimal(0.99999) < Decimal(math.fsum(col)) < Decimal(1.00001))
+
     """
-    Given a morphing matrix 'column' as a list, and a 'random'
+    Given a morphing matrix 'column' as a list, and a 'rand'
     number \in [0.1] return the target packet length.
+    If 'rand' is None, we generate a random number on the fly.
     """
     def __sample_target_size(self, column, rand):
         assert(len(column) == self.size)
@@ -140,8 +142,16 @@ class MorphingMatrix:
 
         return col
 
+"""
+Given a filename 'fname' containing a sparse matrix in Matrix Market
+format, return that matrix in sparse CSC form.
+"""
 def get_csc_from_mm(fname):
     mat = scipy.io.mmread(fname)
+    if (type(mat) is not scipy.sparse.coo_matrix):
+        raise ValueError("'%s' does not contain a sparse " \
+                         "matrix in COO format." % (fname))
+
     return mat.tocsc()
 
 if __name__ != "__main__":
