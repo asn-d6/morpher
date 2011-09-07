@@ -18,7 +18,7 @@ This library provides the following functions:
 
 Example of its usage:
 
-$ python2.7 morpheus.py --source=data/source_distr.txt --target=data/target_distr.txt --output=mm
+$ morpheus.py --source=data/tor_cs_distr.txt --target=data/https_cs_distr.txt --output=mm
 $ ipython2.7
 In [1]: from dream import *
 
