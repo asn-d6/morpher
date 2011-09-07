@@ -5,3 +5,7 @@
   a float.
 
 * Make perseus.py and dream.py work with Python < 2.7 as well.
+  The current blockers are:
+  * subprocess.check_output()
+  * float->decimal, which can be done with Decimal(repr(a_float)) in < 2.7.
+  so it doesn't seem too hard.
