@@ -1,0 +1,49 @@
+Question 1:
+- What kind of weird file format does morpher.py expect for its
+  probability distributions?
+
+- morpher.py file format:
+
+  * Comments are lines that *start* with '#'.
+  * All non-comment lines must be of the form: "<length in bytes>: <probability>"
+  * Non-comment lines must be listed with an increasing <length in bytes>
+    field.
+  
+  For example:
+  
+  """
+  # Example prob. distr. file
+  # Another comment
+  1: 0.35
+  2: 0.22
+  3: 0.43
+  """
+  
+  represents a probability distributions of a protoocol whose packets
+  are only 1, 2 or 3 bytes in size.
+  
+Question 2:
+- What kind of weird file format does dream.py expect for its
+  morphing matrices?
+
+- dream.py expects its morphing matrices in Matrix Market format [0].
+
+  Ideally, morphing matrices should be given in Matrix Market Coordinate
+  Format since morphing matrices are sparse.
+  
+  [0]: scipy.io.mmread() is used to load up the matrices. 
+  
+Question 3:
+- Why are you spawning glpsol(1) instances to solve LP problems instead
+  of simply using a Python wrapper of GLPK like PyGLPK or PyMathProg?
+  What kind of a freak are you?
+
+- I coded a solver using PyMathProg [0] but the resulting morphing
+  matrix was buggy; it contained large negative values in some cases.
+  I spent lots of time to find the issue but after a while I gave up and
+  decided to use glpsol which always served me well.
+  
+  If you can make a morphing matrix solver using PyGLPK or PyMathProg,
+  patches are more than welcome!
+  
+  [0]: git show 6a387355:morpher.py
