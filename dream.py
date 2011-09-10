@@ -46,9 +46,9 @@ PARANOIA = True
 
 """Represents a Morphing Matrix.
 
-'self.matrix' is the matrix itself, represented as a list.
-'self.size' is the number of rows of the square matrix (e.g. 1460 if
-it's a 1460x1460 matrix).
+'self.matrix' is the morphing matrix itself as a SciPy matrix.
+'self.size' is the number of rows/columns of the square morphing
+matrix (e.g. 1460 if it's a 1460x1460 matrix).
 """
 class MorphingMatrix:
     """Initialize MorphingMatrix.
