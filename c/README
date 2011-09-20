@@ -1,0 +1,38 @@
+Very brief summary:
+     You generate a morphing matrix Matrix Market file (using
+     morpheus.py), you pass the morphing matrix file to
+     dream_set_csc_from_mm(), then you do dream_get_target_length()
+     with the source packet length to get the target packet length.
+
+Check dream.h for information on the public functions.
+
+Usage example of the dream.c API:
+---
+#include "dream.h"
+
+...
+
+FILE *f = fopen("my_morphing_matrix.mtx", "r");
+
+...
+
+csc_t *csc = NULL;
+enum mm_ret ret = dream_set_csc_from_mm(&csc, f);
+switch (ret) { ... }
+
+...
+
+double double_rand = <random real \in [0,1]>
+int source_plength = <size of packet that must be morphed>
+int target_plength; // size of future morphed packet
+
+target_plength = dream_get_target_length(csc, source_plength, double_rand);
+if (target_plength < 0) { error }
+
+...
+
+csc_free(csc);
+
+...
+---
+
