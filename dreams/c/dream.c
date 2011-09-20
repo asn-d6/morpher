@@ -9,7 +9,7 @@
 #include "dream.h"
 
 /** Free space allocated by matrix 'csc'. */
-static void
+void
 csc_free(csc_t *csc)
 {
   if (!csc)
@@ -72,7 +72,8 @@ dream_get_target_length(csc_t *csc, int b_n, double rand)
   if ((n < 0) || (n >= csc->size))
     return -1;
 
-  /* Get the size of the column that carries the morphing information */
+  /* Get the size of the column that carries the morphing information
+     for 'n'. */
   col_size = csc->col_ptrs[n+1] - csc->col_ptrs[n];
   assert(col_size > 0);
   assert((csc->col_ptrs[n] + col_size) <= csc->entries_n);
@@ -85,6 +86,8 @@ dream_get_target_length(csc_t *csc, int b_n, double rand)
     i++;
   }
 
+  /* minus one for the 'i++' in the loop.
+     plus one to turn it into one-based again. */
   return csc->row_inds[csc->col_ptrs[n]+i-1]+1;
 }
 
@@ -207,7 +210,7 @@ dream_set_csc_from_mm(csc_t **csc_out, FILE *f)
 
   /* stop validating */
 
-  /* The algorithm is as follows:
+  /* The Matrix Market to CSC algorithm is as follows:
      The Matrix Market file is a matrix stored in coordinate format.
       * We store the whole file in an array of 'element_t's.
       * We sort the elements array first by row and then by column.

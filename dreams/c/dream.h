@@ -26,6 +26,9 @@ enum mm_ret {
     matrix, place the matrix in CSC format in 'csc_out'. */
 enum mm_ret dream_set_csc_from_mm(csc_t **csc_out, FILE *f);
 
+/** Free space allocated by matrix 'csc'. */
+void csc_free(csc_t *csc);
+
 /** Given a source packet length in 'n' and a random number \in [0,1]
     in 'rand', return the target packet length according to the
     morphing matrix in 'csc'.
