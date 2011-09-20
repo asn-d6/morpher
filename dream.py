@@ -114,7 +114,7 @@ class MorphingMatrix:
         cdf = 0
         i = 0
 
-        if (not rand):
+        if (rand is None):
             rand = Decimal(random.random())
         else:
             rand = Decimal(rand)
@@ -122,7 +122,7 @@ class MorphingMatrix:
         if (not (0 <= rand <= 1)):
             raise ValueError("Value of 'rand' is unacceptable! (%s)" % (rand))
 
-        while ((rand > cdf) and (i < self.size)):
+        while ((rand >= cdf) and (i < self.size)):
             cdf += column[i]
             i += 1
 
