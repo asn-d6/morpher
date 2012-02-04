@@ -8,6 +8,8 @@
 #include "mmio.h"
 #include "dream.h"
 
+/** DISABLED TILL THE INTEGER OVERFLOWS ARE FIXED. */
+#if 0
 /** Free space allocated by matrix 'csc'. */
 void
 csc_free(csc_t *csc)
@@ -308,3 +310,4 @@ dream_set_csc_from_mm(csc_t **csc_out, FILE *f)
  done:
   return status;
 }
+#endif
