@@ -22,6 +22,18 @@ In the topdir you can find:
 * data/: The data/ directory contains some potentially useful
     packet length probability distributions.
 
+* analysis/: The analysis/ directory contains a script which helps you
+    decide whether using traffic morphing, is worth it. That is,
+    whether the overhead of traffic morphing is sufficiently smaller
+    than the overhead of directly sampling the probability
+    distributions.
+
+    Given the packet size probability distributions of your source and
+    target protocols and an appropriate morphing matrix, it morphs
+    packets using direct sampling _and_ traffic morphing, and plots
+    the overhead of both methods. Looking at the resulting plots
+    should help you decide if traffic morphing is a good idea.
+
 * ACKNOWLEDGMENTS: A kind and cheerful text file that thanks people
     who helped this project.
 
@@ -32,3 +44,4 @@ In the topdir you can find:
 * LICENSE: A file containing this project's software license.
 
 * README: Hmmmm...
+
